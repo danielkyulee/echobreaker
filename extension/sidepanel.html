@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EchoBreaker</title>
+  <link rel="stylesheet" href="sidepanel.css" />
+</head>
+<body>
+  <div id="app">
+
+    <!-- Header -->
+    <header id="header">
+      <div class="logo">
+        <img src="icons/icon48.png" alt="" width="20" height="20" />
+        <span>EchoBreaker</span>
+      </div>
+      <div id="queue-info" class="queue-info hidden"></div>
+    </header>
+
+    <!-- Idle view -->
+    <div id="view-idle" class="view active">
+      <div class="idle-hint">
+        <div class="idle-icon">◎</div>
+        <p>Hover over a tweet and click the<br>EchoBreaker button to analyze it.</p>
+      </div>
+      <div id="history-section" class="history-section hidden">
+        <div class="section-label">Recent Surveys</div>
+        <div id="history-list" class="history-list"></div>
+      </div>
+    </div>
+
+    <!-- Loading view -->
+    <div id="view-loading" class="view">
+      <div class="tweet-preview" id="loading-tweet-preview"></div>
+      <div class="progress-area">
+        <div class="progress-label" id="progress-label">Simulating respondents…</div>
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" id="progress-bar"></div>
+        </div>
+        <div class="progress-count" id="progress-count">0 / 500</div>
+      </div>
+      <div class="partial-results hidden" id="partial-results">
+        <div class="section-label">Partial results</div>
+        <div id="partial-chart"></div>
+      </div>
+    </div>
+
+    <!-- Results view -->
+    <div id="view-results" class="view">
+      <div class="tweet-preview" id="results-tweet-preview"></div>
+
+      <div class="results-block">
+        <div class="section-label" id="poll-question-label">Overall US Opinion</div>
+        <div id="overall-chart" class="likert-chart"></div>
+      </div>
+
+      <div class="results-block">
+        <div class="section-label">
+          Breakdown by
+          <select id="dimension-select" class="dimension-select"></select>
+        </div>
+        <div id="breakdown-chart" class="breakdown-chart"></div>
+      </div>
+
+      <div class="results-block">
+        <div class="section-label">Most Agreeing Groups</div>
+        <div id="top-agreeing" class="top-list"></div>
+      </div>
+
+      <div class="results-block">
+        <div class="section-label">Most Disagreeing Groups</div>
+        <div id="top-disagreeing" class="top-list"></div>
+      </div>
+
+      <div class="disclaimer">
+        ⚠ AI-simulated estimates based on ~500 synthetic US personas.<br>
+        Not a real poll. For exploratory use only.
+      </div>
+
+      <button id="btn-back" class="btn-back">← Back to history</button>
+    </div>
+
+    <!-- Error view -->
+    <div id="view-error" class="view">
+      <div class="error-box">
+        <div class="error-icon">✕</div>
+        <div id="error-message" class="error-message">Something went wrong.</div>
+        <button id="btn-dismiss" class="btn-secondary">Dismiss</button>
+      </div>
+    </div>
+
+  </div>
+  <script src="sidepanel.js"></script>
+</body>
+</html>

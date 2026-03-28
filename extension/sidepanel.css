@@ -1,0 +1,377 @@
+/* ─── Reset & base ─────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --blue: #1d9bf0;
+  --blue-dark: #0d8edc;
+  --green: #00ba7c;
+  --red: #f4212e;
+  --orange: #f4a124;
+  --neutral: #71767b;
+  --bg: #ffffff;
+  --bg2: #f7f9f9;
+  --border: #eff3f4;
+  --text: #0f1419;
+  --text2: #536471;
+  --text3: #8b98a5;
+  --radius: 8px;
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+body {
+  font-family: var(--font);
+  font-size: 13px;
+  color: var(--text);
+  background: var(--bg);
+  width: 320px;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ─── Header ────────────────────────────────────────────────────────────── */
+#header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--blue);
+}
+
+.queue-info {
+  font-size: 11px;
+  color: var(--text2);
+  background: var(--bg2);
+  padding: 3px 8px;
+  border-radius: 12px;
+}
+
+/* ─── Views ─────────────────────────────────────────────────────────────── */
+.view { display: none; padding: 14px; flex: 1; }
+.view.active { display: flex; flex-direction: column; gap: 14px; }
+
+/* ─── Idle ───────────────────────────────────────────────────────────────── */
+.idle-hint {
+  text-align: center;
+  padding: 32px 20px 20px;
+  color: var(--text2);
+  line-height: 1.5;
+}
+
+.idle-icon {
+  font-size: 32px;
+  color: var(--blue);
+  margin-bottom: 12px;
+}
+
+/* ─── History ────────────────────────────────────────────────────────────── */
+.history-section { display: flex; flex-direction: column; gap: 6px; }
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.history-item {
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background 0.1s;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.history-item:hover { background: var(--bg2); }
+
+.history-item-statement {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.history-item-meta {
+  font-size: 11px;
+  color: var(--text3);
+}
+
+/* ─── Tweet preview ─────────────────────────────────────────────────────── */
+.tweet-preview {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.45;
+  font-style: italic;
+}
+
+.preview-author {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.preview-parent {
+  font-size: 11px;
+  color: var(--text3);
+  border-left: 2px solid var(--border);
+  padding-left: 6px;
+  margin-bottom: 6px;
+  line-height: 1.4;
+}
+
+.preview-reply-label {
+  font-weight: 600;
+  color: var(--blue);
+  margin-right: 4px;
+}
+
+.preview-text {
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.45;
+  font-style: italic;
+}
+
+.tweet-preview .disclaimer-tag {
+  display: inline-block;
+  margin-top: 6px;
+  background: #fff3cd;
+  color: #856404;
+  font-size: 11px;
+  font-style: normal;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* ─── Progress ───────────────────────────────────────────────────────────── */
+.progress-area { display: flex; flex-direction: column; gap: 6px; }
+
+.progress-label {
+  font-size: 12px;
+  color: var(--text2);
+}
+
+.progress-bar-track {
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: var(--blue);
+  border-radius: 3px;
+  transition: width 0.4s ease;
+  width: 0%;
+}
+
+.progress-count {
+  font-size: 11px;
+  color: var(--text3);
+  text-align: right;
+}
+
+/* ─── Likert chart ───────────────────────────────────────────────────────── */
+.likert-chart { display: flex; flex-direction: column; gap: 5px; }
+
+.likert-row {
+  display: grid;
+  grid-template-columns: 130px 1fr 38px;
+  align-items: center;
+  gap: 8px;
+}
+
+.likert-label {
+  font-size: 11.5px;
+  color: var(--text2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.likert-bar-track {
+  height: 10px;
+  background: var(--border);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.likert-bar-fill {
+  height: 100%;
+  border-radius: 5px;
+  transition: width 0.5s ease;
+}
+
+.bar-strongly-agree   { background: #00ba7c; }
+.bar-somewhat-agree   { background: #7ecb8f; }
+.bar-neutral          { background: #c4c9cc; }
+.bar-somewhat-disagree{ background: #f4a124; }
+.bar-strongly-disagree{ background: #f4212e; }
+
+.likert-pct {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text);
+  text-align: right;
+}
+
+/* ─── Breakdown chart ────────────────────────────────────────────────────── */
+.breakdown-chart { display: flex; flex-direction: column; gap: 8px; }
+
+.breakdown-group { display: flex; flex-direction: column; gap: 3px; }
+
+.breakdown-group-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.breakdown-bar-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  font-size: 11px;
+}
+
+.agree-pill, .disagree-pill {
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.agree-pill   { background: #e6f7f0; color: #00875a; }
+.disagree-pill{ background: #fdecea; color: #c62828; }
+
+/* ─── Top segments ───────────────────────────────────────────────────────── */
+.top-list { display: flex; flex-direction: column; gap: 5px; }
+
+.top-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 8px;
+  background: var(--bg2);
+  border-radius: var(--radius);
+  font-size: 12px;
+}
+
+.top-item-label { color: var(--text); }
+.top-item-pct   { font-weight: 700; color: var(--blue); }
+
+/* ─── Section label ──────────────────────────────────────────────────────── */
+.section-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text3);
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.results-block { display: flex; flex-direction: column; }
+
+/* ─── Dimension select ───────────────────────────────────────────────────── */
+.dimension-select {
+  font-size: 11px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 4px;
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+}
+
+/* ─── Disclaimer ─────────────────────────────────────────────────────────── */
+.disclaimer {
+  font-size: 10.5px;
+  color: var(--text3);
+  line-height: 1.5;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+
+/* ─── Buttons ────────────────────────────────────────────────────────────── */
+.btn-back {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 14px;
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--text2);
+  transition: background 0.1s;
+}
+.btn-back:hover { background: var(--bg2); }
+
+.btn-secondary {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 18px;
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--text);
+}
+.btn-secondary:hover { background: var(--border); }
+
+/* ─── Error view ─────────────────────────────────────────────────────────── */
+.error-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.error-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #fdecea;
+  color: var(--red);
+  font-size: 20px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.error-message { color: var(--text2); font-size: 13px; }
+
+/* ─── Utility ────────────────────────────────────────────────────────────── */
+.hidden { display: none !important; }
