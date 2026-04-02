@@ -8,6 +8,7 @@ RESPONSE_LABELS = {
     3: "neutral",
     4: "somewhat_disagree",
     5: "strongly_disagree",
+    6: "no_opinion",
 }
 
 DIMENSION_MAP = {
@@ -95,6 +96,7 @@ def aggregate_results(personas: List[Persona], responses: List[dict], tweet_type
             "neutral": "neutral",
             "somewhat_disagree": "somewhat_negative",
             "strongly_disagree": "very_negative",
+            "no_opinion": "no_opinion",
         }
         def relabel(dist: dict) -> dict:
             return {label_map[k]: v for k, v in dist.items()}

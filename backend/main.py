@@ -13,6 +13,7 @@ from aggregator import aggregate_results
 from config import settings
 from persona_generator import generate_personas
 from simulation_runner import run_simulation
+from political_characterizer import characterize_political_groups
 from tweet_classifier import classify_tweet
 
 logging.basicConfig(level=logging.INFO)
@@ -46,7 +47,21 @@ class SurveyRequest(BaseModel):
     author_handle: str = ""
     replying_to: Optional[str] = None
     parent_tweet: Optional[ParentTweet] = None
+    quote_tweet: Optional[ParentTweet] = None
     persona_count: int = 500
+
+
+class ClassifyRequest(BaseModel):
+    text: str
+
+
+@app.post("/api/classify")
+async def classify_only(request: ClassifyRequest):
+    """Lightweight pre-survey classification — used by the extension before confirming."""
+    result = await classify_tweet(request.text)
+    if result.get("type") not in ("opinion", "general", "skip"):
+        result["type"] = "general"
+    return result
 
 
 @app.get("/api/health")
@@ -111,12 +126,16 @@ async def _process_survey(
         logger.info("[%s] Classifying tweet...", survey_id)
         classification = await classify_tweet(request.text)
         tweet_type = classification.get("type", "general")
+        if tweet_type not in ("opinion", "general", "skip"):
+            tweet_type = "general"
+        thread = classification.get("thread", "standalone")
         disclaimer = classification.get("disclaimer")
 
         await queue.put({
             "type": "classified",
             "data": {
                 "tweet_type": tweet_type,
+                "thread": thread,
                 "disclaimer": disclaimer,
             }
         })
@@ -128,15 +147,10 @@ async def _process_survey(
             })
             return
 
-        # Step 1: Generate personas
+        # Step 1: Generate personas + pre-characterize political groups (in parallel)
         persona_count = min(request.persona_count, 1000)
-        logger.info("[%s] Generating %d personas (type=%s)...", survey_id, persona_count, tweet_type)
-        personas = generate_personas(persona_count)
-        await queue.put(
-            {"type": "progress", "data": {"completed": 0, "total": persona_count}}
-        )
+        logger.info("[%s] Generating personas + characterizing political groups...", survey_id)
 
-        # Build tweet_data dict for simulation (full context, unmodified text)
         tweet_data = {
             "text": request.text,
             "url": request.url,
@@ -144,11 +158,27 @@ async def _process_survey(
             "author_handle": request.author_handle,
             "replying_to": request.replying_to,
             "parent_tweet": request.parent_tweet.model_dump() if request.parent_tweet else None,
+            "quote_tweet": request.quote_tweet.model_dump() if request.quote_tweet else None,
         }
 
-        # Step 2: Run batched simulation, stream progress
+        if settings.enable_characterizer:
+            personas, characterizations = await asyncio.gather(
+                asyncio.to_thread(generate_personas, persona_count),
+                characterize_political_groups(request.text, tweet_type),
+            )
+        else:
+            personas = generate_personas(persona_count)
+            characterizations = None
+
+        await queue.put(
+            {"type": "progress", "data": {"completed": 0, "total": persona_count}}
+        )
+
+        # Step 2: Run batched simulation with characterizations injected
         all_responses: list = []
-        async for batch_result in run_simulation(personas, tweet_data, tweet_type):
+        async for batch_result in run_simulation(
+            personas, tweet_data, tweet_type, characterizations
+        ):
             all_responses.extend(batch_result["responses"])
             await queue.put({
                 "type": "progress",

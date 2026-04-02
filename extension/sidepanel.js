@@ -6,6 +6,7 @@ const $ = (id) => document.getElementById(id);
 
 const views = {
   idle:    $("view-idle"),
+  confirm: $("view-confirm"),
   loading: $("view-loading"),
   results: $("view-results"),
   error:   $("view-error"),
@@ -29,6 +30,7 @@ const SCALE_LABELS = {
     neutral:           "Neutral",
     somewhat_disagree: "Somewhat Disagree",
     strongly_disagree: "Strongly Disagree",
+    no_opinion:        "No Opinion",
   },
   general: {
     very_positive:     "Very Positive",
@@ -36,6 +38,7 @@ const SCALE_LABELS = {
     neutral:           "Neutral",
     somewhat_negative: "Somewhat Negative",
     very_negative:     "Very Negative",
+    no_opinion:        "No Opinion",
   },
 };
 
@@ -45,6 +48,7 @@ const BAR_CLASSES = {
   neutral:           "bar-neutral",
   somewhat_disagree: "bar-somewhat-disagree",
   strongly_disagree: "bar-strongly-disagree",
+  no_opinion:        "bar-no-opinion",
   very_positive:     "bar-strongly-agree",
   somewhat_positive: "bar-somewhat-agree",
   somewhat_negative: "bar-somewhat-disagree",
@@ -79,8 +83,21 @@ function handleState(state) {
       // A survey is queued but not started yet — just update badge
       break;
 
+    case "checking":
+      showCheckingView(state.tweetData);
+      break;
+
+    case "confirm":
+      showConfirmView(state.tweetData, state.warnings || []);
+      break;
+
+    case "cancelled":
+      showView("idle");
+      loadHistory();
+      break;
+
     case "started":
-      startLoadingView(state.tweetData);
+      startLoadingView(state.tweetData, state.warnings || []);
       break;
 
     case "progress":
@@ -105,9 +122,38 @@ function handleState(state) {
 }
 
 // ---------------------------------------------------------------------------
+// Checking view (while /api/classify runs)
+// ---------------------------------------------------------------------------
+function showCheckingView(tweetData) {
+  showView("loading");
+  let preview = "";
+  if (tweetData.author_name || tweetData.author_handle) {
+    preview += [tweetData.author_name, tweetData.author_handle].filter(Boolean).join(" ") + "\n";
+  }
+  preview += `"${tweetData.text}"`;
+  $("loading-tweet-preview").textContent = preview;
+  $("progress-bar").style.width = "0%";
+  $("progress-count").textContent = "";
+  $("progress-label").textContent = "Analyzing tweet…";
+}
+
+// ---------------------------------------------------------------------------
+// Confirm view
+// ---------------------------------------------------------------------------
+function showConfirmView(tweetData, warnings) {
+  showView("confirm");
+  renderTweetPreviewText($("confirm-tweet-preview"), tweetData);
+
+  const container = $("confirm-warnings");
+  container.innerHTML = warnings
+    .map((w) => `<div class="context-warning-item">⚠ ${w}</div>`)
+    .join("");
+}
+
+// ---------------------------------------------------------------------------
 // Loading view
 // ---------------------------------------------------------------------------
-function startLoadingView(tweetData) {
+function startLoadingView(tweetData, warnings) {
   showView("loading");
 
   let preview = "";
@@ -144,6 +190,7 @@ function renderResults(record) {
   const keys = Object.keys(labels);
 
   renderTweetPreview($("results-tweet-preview"), record);
+  renderWarnings($("results-warnings"), record.warnings || []);
 
   $("poll-question-label").textContent = tweetType === "opinion"
     ? "Do Americans agree with this?"
@@ -153,6 +200,33 @@ function renderResults(record) {
   populateDimensionSelect(results, labels, keys);
   renderTopList($("top-agreeing"), results.top_agreeing, "positive");
   renderTopList($("top-disagreeing"), results.top_disagreeing, "negative");
+}
+
+function renderTweetPreviewText(container, tweetData) {
+  container.innerHTML = "";
+  if (tweetData.author_name || tweetData.author_handle) {
+    const author = document.createElement("div");
+    author.className = "preview-author";
+    author.textContent = [tweetData.author_name, tweetData.author_handle].filter(Boolean).join(" · ");
+    container.appendChild(author);
+  }
+  if (tweetData.replying_to) {
+    const tag = document.createElement("div");
+    tag.className = "preview-reply-label";
+    tag.textContent = `↩ Replying to ${tweetData.replying_to}`;
+    container.appendChild(tag);
+  }
+  const text = document.createElement("div");
+  text.className = "preview-text";
+  text.textContent = `"${tweetData.text}"`;
+  container.appendChild(text);
+  if (tweetData.quote_tweet?.text) {
+    const qt = document.createElement("div");
+    qt.className = "preview-parent";
+    const who = tweetData.quote_tweet.author_handle || tweetData.quote_tweet.author_name || "";
+    qt.innerHTML = `<span class="preview-reply-label">↪ ${who}</span> "${tweetData.quote_tweet.text}"`;
+    container.appendChild(qt);
+  }
 }
 
 function renderTweetPreview(container, record) {
@@ -178,10 +252,29 @@ function renderTweetPreview(container, record) {
     container.appendChild(tag);
   }
 
+  if (record.quoteTweet?.text) {
+    const qt = document.createElement("div");
+    qt.className = "preview-parent";
+    const who = record.quoteTweet.author_handle || record.quoteTweet.author_name || "";
+    qt.innerHTML = `<span class="preview-reply-label">↪ ${who}</span> "${record.quoteTweet.text}"`;
+    container.appendChild(qt);
+  }
+
   const text = document.createElement("div");
   text.className = "preview-text";
   text.textContent = `"${record.tweetText}"`;
   container.appendChild(text);
+}
+
+function renderWarnings(container, warnings) {
+  if (!warnings?.length) {
+    container.classList.add("hidden");
+    return;
+  }
+  container.classList.remove("hidden");
+  container.innerHTML = warnings
+    .map((w) => `<div class="context-warning-item">⚠ ${w}</div>`)
+    .join("");
 }
 
 function populateDimensionSelect(results, labels, keys) {
@@ -285,6 +378,12 @@ function showError(message) {
   $("error-message").textContent = message;
 }
 
+$("btn-confirm-yes").addEventListener("click", () => {
+  chrome.runtime.sendMessage({ type: "CONFIRM_SURVEY" });
+});
+$("btn-confirm-no").addEventListener("click", () => {
+  chrome.runtime.sendMessage({ type: "CANCEL_SURVEY" });
+});
 $("btn-dismiss").addEventListener("click", () => { showView("idle"); loadHistory(); });
 $("btn-back").addEventListener("click", () => { showView("idle"); loadHistory(); });
 

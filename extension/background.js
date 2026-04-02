@@ -10,6 +10,7 @@ const API_BASE = "http://localhost:8080";
 let surveyQueue = [];
 let isProcessing = false;
 let currentSurvey = null;
+let pendingConfirm = null; // held until user confirms or cancels
 
 // ---------------------------------------------------------------------------
 // State sync via chrome.storage.session
@@ -23,13 +24,62 @@ async function setState(patch) {
 }
 
 // ---------------------------------------------------------------------------
-// Message router (side panel → background only)
+// Pre-survey warning detection (DOM-based — instant, no LLM needed)
 // ---------------------------------------------------------------------------
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+function buildPreWarnings(tweetData, thread = "standalone") {
+  const warnings = [];
+
+  // Thread status from LLM classification (more accurate than text heuristics)
+  if (thread === "thread_start") {
+    warnings.push("This tweet is the start of a thread — only this first tweet will be analyzed, not the full thread.");
+  } else if (thread === "thread_continuation") {
+    warnings.push("This tweet is part of a thread — earlier context may be missing.");
+  }
+
+  if (tweetData.has_video) {
+    warnings.push("This tweet has a video — video content won't be analyzed.");
+  } else if (tweetData.has_image) {
+    warnings.push("This tweet has an image — image content won't be analyzed.");
+  }
+
+  if (tweetData.quote_tweet) {
+    warnings.push("This tweet quotes another tweet for context — we'll include both in the analysis.");
+  }
+
+  if (tweetData.replying_to && !tweetData.parent_tweet) {
+    warnings.push(`This is a reply to ${tweetData.replying_to} — the original tweet couldn't be loaded. Only the reply will be analyzed, which may lack full context.`);
+  }
+
+  return warnings;
+}
+
+// ---------------------------------------------------------------------------
+// Message router
+// ---------------------------------------------------------------------------
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   switch (message.type) {
-    case "ANALYZE_TWEET":
-      enqueueSurvey(message.data);
-      sendResponse({ queued: true, queueLength: surveyQueue.length });
+    case "ANALYZE_TWEET": {
+      if (sender.tab?.id) chrome.sidePanel.open({ tabId: sender.tab.id }).catch(() => {});
+      // Classify first (cheap LLM call) so we catch implicit threads,
+      // then combine with DOM-based warnings before deciding to confirm.
+      analyzeTweet(message.data);
+      sendResponse({ ok: true });
+      break;
+    }
+
+    case "CONFIRM_SURVEY":
+      if (pendingConfirm) {
+        const { tweetData, warnings } = pendingConfirm;
+        pendingConfirm = null;
+        enqueueSurvey(tweetData, warnings);
+      }
+      sendResponse({ ok: true });
+      break;
+
+    case "CANCEL_SURVEY":
+      pendingConfirm = null;
+      setState({ status: "cancelled" });
+      sendResponse({ ok: true });
       break;
 
     case "GET_HISTORY":
@@ -52,10 +102,41 @@ chrome.action.onClicked.addListener((tab) => {
 });
 
 // ---------------------------------------------------------------------------
+// Pre-survey analysis: classify then confirm or enqueue
+// ---------------------------------------------------------------------------
+async function analyzeTweet(tweetData) {
+  // Show a lightweight "checking…" state so the panel isn't blank
+  await setState({ status: "checking", tweetData });
+
+  // Call the cheap classify endpoint to get LLM thread detection
+  let classification = null;
+  try {
+    const res = await fetch(`${API_BASE}/api/classify`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: tweetData.text }),
+    });
+    if (res.ok) classification = await res.json();
+  } catch (_) {
+    // Backend unreachable — fall back to DOM-only warnings
+  }
+
+  const thread = classification?.thread || "standalone";
+  const warnings = buildPreWarnings(tweetData, thread);
+
+  if (warnings.length > 0) {
+    pendingConfirm = { tweetData, warnings };
+    await setState({ status: "confirm", tweetData, warnings });
+  } else {
+    enqueueSurvey(tweetData, []);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Queue management
 // ---------------------------------------------------------------------------
-function enqueueSurvey(tweetData) {
-  surveyQueue.push(tweetData);
+function enqueueSurvey(tweetData, warnings) {
+  surveyQueue.push({ tweetData, warnings });
   setState({ status: "queued", queueLength: surveyQueue.length });
 
   if (!isProcessing) processNext();
@@ -69,7 +150,7 @@ async function processNext() {
   }
 
   isProcessing = true;
-  const tweetData = surveyQueue.shift();
+  const { tweetData, warnings } = surveyQueue.shift();
   currentSurvey = { tweetData, status: "running", startedAt: Date.now() };
 
   // Open the side panel on the active tab
@@ -82,13 +163,14 @@ async function processNext() {
   await setState({
     status: "started",
     tweetData,
+    warnings,
     progress: { completed: 0, total: 500 },
     record: null,
     error: null,
   });
 
   try {
-    await runSurvey(tweetData);
+    await runSurvey(tweetData, warnings);
   } catch (err) {
     await setState({ status: "error", error: err.message });
   }
@@ -99,7 +181,7 @@ async function processNext() {
 // ---------------------------------------------------------------------------
 // Survey execution
 // ---------------------------------------------------------------------------
-async function runSurvey(tweetData) {
+async function runSurvey(tweetData, warnings) {
   const createRes = await fetch(`${API_BASE}/api/survey`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -110,6 +192,7 @@ async function runSurvey(tweetData) {
       author_handle: tweetData.author_handle,
       replying_to: tweetData.replying_to || null,
       parent_tweet: tweetData.parent_tweet || null,
+      quote_tweet: tweetData.quote_tweet || null,
       persona_count: 500,
     }),
   });
@@ -120,10 +203,10 @@ async function runSurvey(tweetData) {
   }
 
   const { survey_id: surveyId } = await createRes.json();
-  await streamResults(surveyId, tweetData);
+  await streamResults(surveyId, tweetData, warnings);
 }
 
-async function streamResults(surveyId, tweetData) {
+async function streamResults(surveyId, tweetData, warnings) {
   const res = await fetch(`${API_BASE}/api/survey/${surveyId}/stream`);
   if (!res.ok) throw new Error(`Stream error: ${res.status}`);
 
@@ -164,6 +247,8 @@ async function streamResults(surveyId, tweetData) {
             authorHandle: tweetData.author_handle,
             replyingTo: tweetData.replying_to || null,
             parentTweet: tweetData.parent_tweet || null,
+            quoteTweet: tweetData.quote_tweet || null,
+            warnings,
             completedAt: Date.now(),
             results: data,
           };

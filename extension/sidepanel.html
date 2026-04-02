@@ -30,6 +30,17 @@
       </div>
     </div>
 
+    <!-- Confirm view -->
+    <div id="view-confirm" class="view">
+      <div class="tweet-preview" id="confirm-tweet-preview"></div>
+      <div class="confirm-warnings" id="confirm-warnings"></div>
+      <div class="confirm-question">Survey this tweet anyway?</div>
+      <div class="confirm-actions">
+        <button id="btn-confirm-yes" class="btn-primary">Yes, analyze it</button>
+        <button id="btn-confirm-no" class="btn-secondary">Cancel</button>
+      </div>
+    </div>
+
     <!-- Loading view -->
     <div id="view-loading" class="view">
       <div class="tweet-preview" id="loading-tweet-preview"></div>
@@ -49,6 +60,7 @@
     <!-- Results view -->
     <div id="view-results" class="view">
       <div class="tweet-preview" id="results-tweet-preview"></div>
+      <div id="results-warnings" class="context-warnings hidden"></div>
 
       <div class="results-block">
         <div class="section-label" id="poll-question-label">Overall US Opinion</div>

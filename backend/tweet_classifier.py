@@ -1,10 +1,10 @@
 """
-Classifies a tweet as 'opinion' or 'general' to determine poll format.
-Does NOT modify or normalize the tweet text — it is used as-is.
+Classifies a tweet for survey purposes. Does NOT modify tweet text.
 
-opinion → Agree/Disagree Likert scale
-general → Positive/Negative sentiment scale
-skip    → Tweet has no surveyable content (e.g. "just had pizza")
+Returns:
+  type        — "opinion" | "general" | "skip"
+  thread      — "standalone" | "thread_start" | "thread_continuation"
+  disclaimer  — null | short warning string
 """
 
 import json
@@ -30,19 +30,23 @@ async def classify_tweet(tweet_text: str) -> dict:
     Returns:
         {
             "type": "opinion" | "general" | "skip",
+            "thread": "standalone" | "thread_start" | "thread_continuation",
             "disclaimer": null | "short warning string"
         }
 
-    type definitions:
-        opinion — tweet expresses a clear opinion, belief, or claim that
-                  people can meaningfully agree or disagree with
-        general — tweet is news, an observation, a reaction, or a question
-                  where sentiment (positive/negative) is the right measure
-        skip    — no surveyable content (personal anecdote, spam, etc.)
+    type:
+        opinion   — expresses a belief people can agree/disagree with
+        general   — news, observation, reaction, question (sentiment poll)
+        skip      — no surveyable content
+
+    thread:
+        standalone          — complete self-contained tweet
+        thread_start        — starts a thread (e.g. "1/", "🧵", "Thread:")
+        thread_continuation — middle/end of a thread (e.g. "2/5", "cont.")
     """
     response = await _client.messages.create(
         model=settings.model,
-        max_tokens=150,
+        max_tokens=200,
         temperature=0.1,
         messages=[
             {
@@ -51,20 +55,29 @@ async def classify_tweet(tweet_text: str) -> dict:
 
 Tweet: {tweet_text}
 
-Rules:
-- "opinion": tweet makes a claim, argument, or expresses a belief people
-  can meaningfully agree or disagree with
-- "general": tweet is news, an observation, a video/photo share, a question,
-  or a reaction — where asking "how do you feel about this?" makes more sense
-- "skip": no surveyable content at all (e.g. personal diary entry, spam)
-- Set disclaimer to a short string if the topic is very recent breaking news;
-  otherwise null
+Classify "type":
+- "opinion": makes a claim or argument people can meaningfully agree or disagree with
+- "general": news, observation, video/photo share, question, or reaction
+- "skip": no surveyable content (personal diary, spam, gibberish)
+
+Classify "thread":
+- "standalone": complete, self-contained tweet
+- "thread_start": clearly starts a thread (signals: "1/", "1/n", "🧵", "Thread:", opening that implies more follows)
+- "thread_continuation": clearly a later part of a thread (signals: "2/", "3/5", "(cont.)", starts mid-sentence, references "above" or "previous")
+
+Set "disclaimer" to a short string if the topic is very recent breaking news the AI may lack data on; otherwise null.
 
 Respond ONLY with valid JSON, no explanation:
-{{"type": "opinion", "disclaimer": null}}""",
+{{"type": "opinion", "thread": "standalone", "disclaimer": null}}""",
             }
         ],
     )
 
     raw = _strip_fence(response.content[0].text)
-    return json.loads(raw)
+    result = json.loads(raw)
+
+    # Ensure thread field exists with a safe default
+    if "thread" not in result:
+        result["thread"] = "standalone"
+
+    return result

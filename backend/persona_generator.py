@@ -47,13 +47,24 @@ DISTRIBUTIONS: dict[str, dict[str, float]] = {
         "Asian": 0.06,
         "Other": 0.02,
     },
+    # Political affiliation — Strong partisans split into sub-types to capture
+    # genuine intra-party diversity (Pew Research 2023 + PRRI 2023)
     "politics": {
-        "Strong Democrat": 0.16,
-        "Lean Democrat": 0.17,
-        "Independent": 0.27,
-        "Lean Republican": 0.17,
-        "Strong Republican": 0.17,
-        "Other/No affiliation": 0.06,
+        # Strong Republican sub-types (~17% total)
+        "Trump loyalist Republican":        0.080,  # MAGA base
+        "Traditional conservative Republican": 0.050,  # establishment/Reagan conservative
+        "Libertarian-leaning Republican":   0.025,  # small-govt, anti-interventionist
+        "Moderate conservative Republican": 0.015,  # fiscal conservative, socially moderate
+        # Other partisan / non-partisan
+        "Lean Republican":                  0.170,
+        "Independent":                      0.270,
+        "Lean Democrat":                    0.170,
+        # Strong Democrat sub-types (~16% total)
+        "Progressive Democrat":             0.060,  # Bernie/AOC wing
+        "Mainstream liberal Democrat":      0.070,  # Obama/Biden Democrat
+        "Moderate/centrist Democrat":       0.030,  # blue-dog / swing-state Democrat
+        # Non-aligned
+        "Other/No affiliation":             0.060,
     },
 }
 

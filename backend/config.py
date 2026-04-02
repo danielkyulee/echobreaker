@@ -15,6 +15,7 @@ class Settings:
     max_concurrent_batches: int = int(os.getenv("MAX_CONCURRENT_BATCHES", "5"))
     port: int = int(os.getenv("PORT", "8080"))
     cors_origins: list = ["*"]  # Tighten in production
+    enable_characterizer: bool = os.getenv("ENABLE_CHARACTERIZER", "true").lower() == "true"
 
 
 settings = Settings()

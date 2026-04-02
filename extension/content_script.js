@@ -119,6 +119,54 @@ function extractParentTweet(tweetEl) {
   return null;
 }
 
+function extractQuoteTweet(tweetEl) {
+  // Twitter renders quoted tweets with a second [data-testid="tweetText"] inside
+  // the same article. The first belongs to the main tweet; any extra belongs to a quote.
+  const allTextEls = [...tweetEl.querySelectorAll('[data-testid="tweetText"]')];
+  if (allTextEls.length < 2) return null;
+
+  const quotedTextEl = allTextEls[1];
+  const text = quotedTextEl.innerText.trim();
+  if (!text) return null;
+
+  // Walk up to the nearest card-like container to find the quoted author
+  const quoteCard =
+    quotedTextEl.closest('[data-testid="quoteTweet"]') ||
+    quotedTextEl.closest('div[role="link"]') ||
+    quotedTextEl.parentElement;
+  const author = quoteCard ? extractAuthor(quoteCard) : { name: "", handle: "" };
+
+  return { author_name: author.name, author_handle: author.handle, text };
+}
+
+function _findQuoteCard(tweetEl) {
+  // Try known testid first, then fall back to locating the second tweetText's container
+  const byTestId = tweetEl.querySelector('[data-testid="quoteTweet"]');
+  if (byTestId) return byTestId;
+  const allTexts = [...tweetEl.querySelectorAll('[data-testid="tweetText"]')];
+  if (allTexts.length < 2) return null;
+  return allTexts[1].closest('div[role="link"]') || null;
+}
+
+function extractMediaFlags(tweetEl) {
+  // Exclude quoted tweet and link-preview cards — their media belongs to another tweet.
+  const excluded = [
+    _findQuoteCard(tweetEl),
+    tweetEl.querySelector('[data-testid="card.wrapper"]'),
+  ].filter(Boolean);
+
+  function ownedByTweet(el) {
+    return !excluded.some((ex) => ex.contains(el));
+  }
+
+  const hasImage = [...tweetEl.querySelectorAll('[data-testid="tweetPhoto"]')].some(ownedByTweet);
+  const hasVideo = [
+    ...tweetEl.querySelectorAll('[data-testid="videoPlayer"], [data-testid="videoComponent"], video'),
+  ].some(ownedByTweet);
+
+  return { has_image: hasImage, has_video: hasVideo };
+}
+
 function extractTweetData(tweetEl) {
   const author = extractAuthor(tweetEl);
   const text = extractTweetText(tweetEl);
@@ -128,6 +176,8 @@ function extractTweetData(tweetEl) {
 
   const replyingTo = extractReplyingTo(tweetEl);
   const parentTweet = replyingTo ? extractParentTweet(tweetEl) : null;
+  const quoteTweet = extractQuoteTweet(tweetEl);
+  const { has_image, has_video } = extractMediaFlags(tweetEl);
 
   return {
     text,
@@ -136,6 +186,9 @@ function extractTweetData(tweetEl) {
     author_handle: author.handle,
     replying_to: replyingTo,
     parent_tweet: parentTweet,
+    quote_tweet: quoteTweet,
+    has_image,
+    has_video,
   };
 }
 
@@ -197,6 +250,10 @@ function onButtonClick(e) {
   btn.removeEventListener("click", onButtonClick);
   setTimeout(() => btn.classList.remove("pulsing"), 400);
 
+  if (!chrome.runtime?.sendMessage) {
+    alert("EchoBreaker lost its connection. Please refresh this page.");
+    return;
+  }
   chrome.runtime.sendMessage({ type: "ANALYZE_TWEET", data: tweetData });
 }
 

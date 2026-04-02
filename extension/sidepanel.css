@@ -170,6 +170,23 @@ body {
   border-radius: 4px;
 }
 
+/* ─── Context warnings ───────────────────────────────────────────────────── */
+.context-warnings {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.context-warning-item {
+  font-size: 11px;
+  color: #7d5a00;
+  background: #fff8e1;
+  border-left: 3px solid #f4a124;
+  padding: 5px 8px;
+  border-radius: 0 4px 4px 0;
+  line-height: 1.4;
+}
+
 /* ─── Progress ───────────────────────────────────────────────────────────── */
 .progress-area { display: flex; flex-direction: column; gap: 6px; }
 
@@ -235,6 +252,7 @@ body {
 .bar-neutral          { background: #c4c9cc; }
 .bar-somewhat-disagree{ background: #f4a124; }
 .bar-strongly-disagree{ background: #f4212e; }
+.bar-no-opinion       { background: #e8eaed; }
 
 .likert-pct {
   font-size: 11px;
@@ -323,6 +341,39 @@ body {
   border-top: 1px solid var(--border);
   padding-top: 10px;
 }
+
+/* ─── Confirm view ───────────────────────────────────────────────────────── */
+.confirm-warnings {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.confirm-question {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin-top: 2px;
+}
+
+.confirm-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.btn-primary {
+  background: var(--blue);
+  border: none;
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  color: #fff;
+  transition: background 0.1s;
+}
+.btn-primary:hover { background: var(--blue-dark); }
 
 /* ─── Buttons ────────────────────────────────────────────────────────────── */
 .btn-back {
