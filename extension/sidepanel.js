@@ -111,6 +111,11 @@ function handleState(state) {
       break;
 
     case "started":
+      debriefSubmitted = false;
+      debriefInitialized = false;
+      $("btn-debrief").disabled = false;
+      $("btn-debrief").textContent = "Debrief";
+      $("btn-debrief").classList.remove("btn-disabled");
       startLoadingView(state.tweetData, state.warnings || []);
       break;
 
@@ -120,6 +125,7 @@ function handleState(state) {
 
     case "complete":
       if (state.record) {
+        if (currentPreSurveyData) currentPreSurveyData.record = state.record;
         renderResults(state.record);
         $("btn-debrief").classList.toggle("hidden", !researchMode);
       }
@@ -436,16 +442,30 @@ function showPreSurvey(tweetData, tweetType) {
     container.appendChild(row);
   });
 
-  // Sync sliders and number inputs
+  // Sync sliders and number inputs, cap at 100% total
+  function clampValue(el) {
+    const others = [...container.querySelectorAll(`.est-number:not([data-key="${el.dataset.key}"])`)];
+    const othersTotal = others.reduce((s, e) => s + (parseInt(e.value) || 0), 0);
+    const max = 100 - othersTotal;
+    const clamped = Math.min(Math.max(parseInt(el.value) || 0, 0), max);
+    return clamped;
+  }
+
   container.querySelectorAll(".est-slider").forEach((slider) => {
     slider.addEventListener("input", () => {
-      container.querySelector(`.est-number[data-key="${slider.dataset.key}"]`).value = slider.value;
+      const num = container.querySelector(`.est-number[data-key="${slider.dataset.key}"]`);
+      const clamped = clampValue({ value: slider.value, dataset: slider.dataset });
+      slider.value = clamped;
+      num.value = clamped;
       updateEstimateTotal();
     });
   });
   container.querySelectorAll(".est-number").forEach((num) => {
     num.addEventListener("input", () => {
-      container.querySelector(`.est-slider[data-key="${num.dataset.key}"]`).value = num.value;
+      const slider = container.querySelector(`.est-slider[data-key="${num.dataset.key}"]`);
+      const clamped = clampValue(num);
+      num.value = clamped;
+      slider.value = clamped;
       updateEstimateTotal();
     });
   });
@@ -486,22 +506,65 @@ $("debrief-surprise").addEventListener("input", (e) => {
   $("debrief-surprise-val").textContent = e.target.value;
 });
 
+let debriefSubmitted = false;
+let debriefInitialized = false;
+
 $("btn-debrief").addEventListener("click", () => {
   showView("debrief");
-  $("debrief-surprise").value = 5;
-  $("debrief-surprise-val").textContent = "5";
-  $("debrief-trust").value = "";
-  $("debrief-changed").value = "";
-  $("debrief-other").value = "";
+  if (!debriefInitialized) {
+    debriefInitialized = true;
+    $("debrief-surprise").value = 5;
+    $("debrief-surprise-val").textContent = "5";
+    $("debrief-trust").value = "";
+    $("debrief-changed").value = "";
+    $("debrief-other").value = "";
+  }
+  if (debriefSubmitted) {
+    $("btn-debrief-submit").disabled = true;
+    $("btn-debrief-submit").textContent = "Submitted";
+  } else {
+    $("btn-debrief-submit").disabled = false;
+    $("btn-debrief-submit").textContent = "Submit";
+  }
+  renderDebriefComparison();
 });
 
-$("btn-debrief-submit").addEventListener("click", () => {
-  const postSurvey = {
-    surprise: parseInt($("debrief-surprise").value),
-    trust: $("debrief-trust").value.trim(),
-    changed_belief: $("debrief-changed").value.trim(),
-    open_response: $("debrief-other").value.trim(),
-  };
+function renderDebriefComparison() {
+  const container = $("debrief-comparison");
+  container.innerHTML = "";
+
+  const pre = currentPreSurveyData?.preSurvey;
+  const record = currentPreSurveyData?.record;
+  if (!pre?.estimates || !record?.results?.overall) return;
+
+  const tweetType = record.results.tweet_type || "opinion";
+  const labels = SCALE_LABELS[tweetType] || SCALE_LABELS.opinion;
+
+  const table = document.createElement("div");
+  table.className = "comparison-table";
+  table.innerHTML = `<div class="comparison-header">
+    <div></div><div>Your Estimate</div><div>EchoBreaker</div>
+  </div>`;
+
+  Object.entries(labels).forEach(([key, label]) => {
+    const userPct = pre.estimates[key] || 0;
+    const actualPct = ((record.results.overall[key] || 0) * 100).toFixed(1);
+    const row = document.createElement("div");
+    row.className = "comparison-row";
+    row.innerHTML = `
+      <div class="comparison-label">${label}</div>
+      <div class="comparison-val">${userPct}%</div>
+      <div class="comparison-val">${actualPct}%</div>
+    `;
+    table.appendChild(row);
+  });
+
+  container.appendChild(table);
+}
+
+function submitDebrief(postSurvey) {
+  if (debriefSubmitted) return;
+  debriefSubmitted = true;
 
   chrome.runtime.sendMessage({
     type: "SUBMIT_DEBRIEF",
@@ -511,11 +574,28 @@ $("btn-debrief-submit").addEventListener("click", () => {
       participantName,
     },
   });
+}
 
+$("btn-debrief-submit").addEventListener("click", () => {
+  if (debriefSubmitted) return;
+  if (!confirm("Are you sure? This is your final answer and cannot be changed.")) return;
+
+  const postSurvey = {
+    surprise: parseInt($("debrief-surprise").value),
+    trust: $("debrief-trust").value.trim(),
+    changed_belief: $("debrief-changed").value.trim(),
+    open_response: $("debrief-other").value.trim(),
+  };
+
+  submitDebrief(postSurvey);
+  debriefSubmitted = true;
+  $("btn-debrief").disabled = true;
+  $("btn-debrief").textContent = "Submitted";
+  $("btn-debrief").classList.add("btn-disabled");
   showView("results");
 });
 
-$("btn-debrief-skip").addEventListener("click", () => showView("results"));
+$("btn-debrief-back").addEventListener("click", () => showView("results"));
 
 // ---------------------------------------------------------------------------
 // Confirm / dismiss / back buttons

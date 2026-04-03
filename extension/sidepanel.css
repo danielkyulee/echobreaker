@@ -382,6 +382,8 @@ body {
   transition: background 0.1s;
 }
 .btn-primary:hover { background: var(--blue-dark); }
+.btn-primary.btn-disabled { background: #c4c9cc; cursor: default; }
+.btn-primary.btn-disabled:hover { background: #c4c9cc; }
 
 /* ─── Buttons ────────────────────────────────────────────────────────────── */
 .btn-back {
@@ -549,6 +551,39 @@ body {
 }
 .estimate-total.valid { color: var(--green); }
 .estimate-total.invalid { color: var(--red); }
+
+/* ─── Debrief comparison ─────────────────────────────────────────────────── */
+.debrief-comparison {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+}
+
+.comparison-header {
+  display: grid;
+  grid-template-columns: 120px 1fr 1fr;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+}
+
+.comparison-row {
+  display: grid;
+  grid-template-columns: 120px 1fr 1fr;
+  gap: 6px;
+  font-size: 12px;
+  padding: 3px 0;
+}
+
+.comparison-label { color: var(--text2); }
+.comparison-val { font-weight: 600; color: var(--text); text-align: center; }
 
 .surprise-scale { display: flex; flex-direction: column; gap: 4px; }
 .range-input { width: 100%; cursor: pointer; }

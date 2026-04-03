@@ -213,6 +213,12 @@ async def _process_survey(
         await queue.put({"type": "complete", "data": results})
         logger.info("[%s] Survey complete.", survey_id)
 
+        # Log every survey to Firestore for analytics
+        try:
+            log_survey_usage({**tweet_data, "tweet_type": tweet_type})
+        except Exception as e:
+            logger.warning("[%s] Failed to log survey usage: %s", survey_id, e)
+
     except Exception as e:
         logger.exception("[%s] Survey failed: %s", survey_id, e)
         await queue.put({"type": "error", "data": {"message": str(e)}})

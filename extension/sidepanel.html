@@ -76,7 +76,7 @@
       </div>
       <div class="research-question">
         <label class="research-q-label" for="pre-survey-cues">What cues influenced your guess?</label>
-        <textarea id="pre-survey-cues" class="research-textarea" rows="3" placeholder="e.g. The author's tone, the topic, my own beliefs..."></textarea>
+        <textarea id="pre-survey-cues" class="research-textarea" rows="3" placeholder="Write your reasons here..."></textarea>
       </div>
       <button id="btn-pre-survey-submit" class="btn-primary" disabled>Submit &amp; Run Survey</button>
     </div>
@@ -129,6 +129,7 @@
     <!-- Debrief (research mode) -->
     <div id="view-debrief" class="view">
       <div class="research-section-title">Debrief</div>
+      <div id="debrief-comparison" class="debrief-comparison"></div>
       <div class="research-question">
         <label class="research-q-label">How surprised are you by the results? (1 = Not at all, 10 = Extremely)</label>
         <div class="surprise-scale">
@@ -150,7 +151,7 @@
         <textarea id="debrief-other" class="research-textarea" rows="3" placeholder="Optional"></textarea>
       </div>
       <button id="btn-debrief-submit" class="btn-primary">Submit</button>
-      <button id="btn-debrief-skip" class="btn-back">Skip</button>
+      <button id="btn-debrief-back" class="btn-back">← Back</button>
     </div>
 
     <!-- Error view -->

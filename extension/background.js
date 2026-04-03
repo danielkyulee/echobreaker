@@ -85,15 +85,22 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       break;
 
     case "PROCEED_AFTER_PRE_SURVEY":
-      if (pendingPreSurvey) {
-        const { tweetData, warnings } = pendingPreSurvey;
-        pendingPreSurvey = null;
-        // Store pre-survey data so we can send it with the debrief later
-        currentResearchData = { preSurvey: message.data, participantName: message.data.participantName };
-        enqueueSurvey(tweetData, warnings);
-      }
-      sendResponse({ ok: true });
-      break;
+      // Recover pendingPreSurvey from session storage if service worker restarted
+      (async () => {
+        if (!pendingPreSurvey) {
+          const { surveyState } = await chrome.storage.session.get("surveyState");
+          if (surveyState?.status === "ready_for_pre_survey" && surveyState.tweetData) {
+            pendingPreSurvey = { tweetData: surveyState.tweetData, warnings: [] };
+          }
+        }
+        if (pendingPreSurvey) {
+          const { tweetData, warnings } = pendingPreSurvey;
+          pendingPreSurvey = null;
+          currentResearchData = { preSurvey: message.data, participantName: message.data.participantName };
+          enqueueSurvey(tweetData, warnings);
+        }
+      })();
+      return true; // async sendResponse
 
     case "SUBMIT_DEBRIEF": {
       const debriefPayload = {
