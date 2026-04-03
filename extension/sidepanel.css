@@ -252,7 +252,7 @@ body {
 .bar-neutral          { background: #c4c9cc; }
 .bar-somewhat-disagree{ background: #f4a124; }
 .bar-strongly-disagree{ background: #f4212e; }
-.bar-no-opinion       { background: #e8eaed; }
+.bar-no-opinion       { background: #536471; }
 
 .likert-pct {
   font-size: 11px;
@@ -262,50 +262,22 @@ body {
 }
 
 /* ─── Breakdown chart ────────────────────────────────────────────────────── */
-.breakdown-chart { display: flex; flex-direction: column; gap: 8px; }
+.breakdown-chart { display: flex; flex-direction: column; gap: 16px; }
 
-.breakdown-group { display: flex; flex-direction: column; gap: 3px; }
+.breakdown-group { display: flex; flex-direction: column; gap: 2px; }
 
 .breakdown-group-label {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text2);
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-
-.breakdown-bar-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-  font-size: 11px;
-}
-
-.agree-pill, .disagree-pill {
-  padding: 3px 8px;
-  border-radius: 12px;
-  font-weight: 600;
-  text-align: center;
-}
-
-.agree-pill   { background: #e6f7f0; color: #00875a; }
-.disagree-pill{ background: #fdecea; color: #c62828; }
-
-/* ─── Top segments ───────────────────────────────────────────────────────── */
-.top-list { display: flex; flex-direction: column; gap: 5px; }
-
-.top-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 6px 8px;
-  background: var(--bg2);
-  border-radius: var(--radius);
   font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 2px;
 }
 
-.top-item-label { color: var(--text); }
-.top-item-pct   { font-weight: 700; color: var(--blue); }
+.breakdown-likert { display: flex; flex-direction: column; gap: 1px; }
+
+.likert-row-sm .likert-label { font-size: 10px; min-width: 100px; }
+.likert-row-sm .likert-pct   { font-size: 10px; min-width: 36px; }
+.likert-row-sm .likert-bar-track { height: 8px; }
 
 /* ─── Section label ──────────────────────────────────────────────────────── */
 .section-label {
@@ -321,6 +293,42 @@ body {
 }
 
 .results-block { display: flex; flex-direction: column; }
+
+.overall-card {
+  background: #f0f2f4;
+  border: 1px solid var(--border);
+  border-left: 4px solid #f5c518;
+  border-radius: var(--radius);
+  padding: 16px;
+}
+
+.overall-card .section-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0;
+  text-transform: none;
+  margin-bottom: 12px;
+}
+
+.overall-card .likert-label { font-size: 13px; }
+.overall-card .likert-pct   { font-size: 13px; font-weight: 600; }
+.overall-card .likert-bar-track { height: 14px; }
+
+/* ─── Separator between overall and breakdowns ───────────────────────────── */
+.breakdown-separator {
+  border: none;
+  border-top: 2px solid var(--border);
+  margin: 4px 0;
+}
+
+.breakdown-header {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
 
 /* ─── Dimension select ───────────────────────────────────────────────────── */
 .dimension-select {

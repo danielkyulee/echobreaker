@@ -56,8 +56,8 @@ async def classify_tweet(tweet_text: str) -> dict:
 Tweet: {tweet_text}
 
 Classify "type":
-- "opinion": makes a claim or argument people can meaningfully agree or disagree with
-- "general": news, observation, video/photo share, question, or reaction
+- "opinion": makes a DEBATABLE claim, argument, or policy position that reasonable people could agree OR disagree with (e.g. "Taxes should be higher", "AI will replace jobs")
+- "general": personal declarations, emotional statements, news, observations, announcements, questions, or reactions where agree/disagree doesn't fit (e.g. "I'm proud of my faith", "This video is going viral", "RIP to a legend")
 - "skip": no surveyable content (personal diary, spam, gibberish)
 
 Classify "thread":

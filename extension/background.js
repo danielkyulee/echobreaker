@@ -31,23 +31,23 @@ function buildPreWarnings(tweetData, thread = "standalone") {
 
   // Thread status from LLM classification (more accurate than text heuristics)
   if (thread === "thread_start") {
-    warnings.push("This tweet is the start of a thread — only this first tweet will be analyzed, not the full thread.");
+    warnings.push("This tweet seems to be the start of a thread. Only this particular tweet will be analyzed.");
   } else if (thread === "thread_continuation") {
-    warnings.push("This tweet is part of a thread — earlier context may be missing.");
+    warnings.push("This tweet seems to be part of a larger thread. If so, earlier context may be missing.");
   }
 
   if (tweetData.has_video) {
-    warnings.push("This tweet has a video — video content won't be analyzed.");
+    warnings.push("This tweet contains a video. EchoBreaker cannot analyze video. You can still analyze this tweet, but it will not consider the context from the video.");
   } else if (tweetData.has_image) {
-    warnings.push("This tweet has an image — image content won't be analyzed.");
+    warnings.push("This tweet contains an image. EchoBreaker cannot analyze images. You can still analyze this tweet, but it will not consider the context from the image.");
   }
 
   if (tweetData.quote_tweet) {
-    warnings.push("This tweet quotes another tweet for context — we'll include both in the analysis.");
+    warnings.push("This tweet quotes another post. We'll include the original post so the survey has the full context.");
   }
 
   if (tweetData.replying_to && !tweetData.parent_tweet) {
-    warnings.push(`This is a reply to ${tweetData.replying_to} — the original tweet couldn't be loaded. Only the reply will be analyzed, which may lack full context.`);
+    warnings.push(`This is a reply to ${tweetData.replying_to}. The original post couldn't be loaded. Only the reply will be analyzed, which may lack full context.`);
   }
 
   return warnings;

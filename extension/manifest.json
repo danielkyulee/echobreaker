@@ -54,5 +54,12 @@
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
-  }
+  },
+
+  "web_accessible_resources": [
+    {
+      "resources": ["icons/icon48.png"],
+      "matches": ["https://twitter.com/*", "https://x.com/*", "https://www.reddit.com/*"]
+    }
+  ]
 }

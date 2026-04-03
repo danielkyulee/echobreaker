@@ -5,7 +5,7 @@
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: #1d9bf0;
+  background: #ffffff;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
   cursor: pointer;
   z-index: 9999;
@@ -27,7 +27,7 @@
 .echobreaker-btn:hover {
   opacity: 1;
   transform: scale(1.12);
-  background: #0d8edc;
+  background: #f0f0f0;
 }
 
 .echobreaker-btn.queued {

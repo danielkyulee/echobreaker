@@ -19,17 +19,14 @@ _client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
 
 # Must stay in sync with persona_generator.py DISTRIBUTIONS["politics"]
 POLITICAL_GROUPS = [
-    "Trump loyalist Republican",
-    "Traditional conservative Republican",
-    "Libertarian-leaning Republican",
-    "Moderate conservative Republican",
-    "Lean Republican",
-    "Independent",
+    "Far Left Democrat",
+    "Left Democrat",
     "Lean Democrat",
-    "Progressive Democrat",
-    "Mainstream liberal Democrat",
-    "Moderate/centrist Democrat",
-    "Other/No affiliation",
+    "Moderate",
+    "Moderate Republican",
+    "Right Republican",
+    "Far Right Republican",
+    "Independent",
 ]
 
 

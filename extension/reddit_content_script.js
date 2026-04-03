@@ -23,12 +23,11 @@ function createButton() {
   btn.className = "echobreaker-btn";
   btn.title = "Analyze with EchoBreaker";
   btn.setAttribute("aria-label", "Analyze with EchoBreaker");
-  btn.innerHTML = `
-    <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M1 8h2l2-5 3 10 2-7 1 2h4" stroke="white" stroke-width="1.5"
-            stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
-  `;
+  const img = document.createElement("img");
+  img.src = chrome.runtime.getURL("icons/icon48.png");
+  img.width = 20;
+  img.height = 20;
+  btn.appendChild(img);
   return btn;
 }
 

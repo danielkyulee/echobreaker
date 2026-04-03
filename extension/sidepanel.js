@@ -193,13 +193,11 @@ function renderResults(record) {
   renderWarnings($("results-warnings"), record.warnings || []);
 
   $("poll-question-label").textContent = tweetType === "opinion"
-    ? "Do Americans agree with this?"
-    : "How do Americans feel about this?";
+    ? "Do people agree?"
+    : "How do people feel about this?";
 
   renderLikertChart($("overall-chart"), results.overall, labels);
   populateDimensionSelect(results, labels, keys);
-  renderTopList($("top-agreeing"), results.top_agreeing, "positive");
-  renderTopList($("top-disagreeing"), results.top_disagreeing, "negative");
 }
 
 function renderTweetPreviewText(container, tweetData) {
@@ -294,6 +292,14 @@ function populateDimensionSelect(results, labels, keys) {
   select.onchange = () => renderBreakdown(results, select.value, labels, keys);
 }
 
+// Preferred display order for dimensions that need explicit ordering
+const DIMENSION_ORDER = {
+  by_education: ["No college", "Some college", "Bachelor's degree", "Graduate degree"],
+  by_income:    ["Under $30K", "$30K-$60K", "$60K-$100K", "Over $100K"],
+  by_race:      ["Asian", "Black", "Hispanic", "White", "Other"],
+  by_politics:  ["Far Left Democrat", "Left Democrat", "Lean Democrat", "Moderate", "Moderate Republican", "Right Republican", "Far Right Republican", "Independent"],
+};
+
 function renderBreakdown(results, dimensionKey, labels, keys) {
   const container = $("breakdown-chart");
   container.innerHTML = "";
@@ -301,22 +307,37 @@ function renderBreakdown(results, dimensionKey, labels, keys) {
   const groups = results[dimensionKey];
   if (!groups) return;
 
-  Object.entries(groups).forEach(([groupName, dist]) => {
-    const agreePct = ((dist[keys[0]] || 0) + (dist[keys[1]] || 0)) * 100;
-    const disagreePct = ((dist[keys[3]] || 0) + (dist[keys[4]] || 0)) * 100;
+  // Use explicit order if defined, otherwise use the order from the data
+  const order = DIMENSION_ORDER[dimensionKey];
+  const entries = order
+    ? order.filter((name) => groups[name]).map((name) => [name, groups[name]])
+    : Object.entries(groups);
 
-    const agreeWord = labels[keys[0]].split(" ")[0];
-    const disagreeWord = labels[keys[4]].split(" ").slice(-1)[0];
-
+  entries.forEach(([groupName, dist]) => {
     const group = document.createElement("div");
     group.className = "breakdown-group";
-    group.innerHTML = `
-      <div class="breakdown-group-label">${groupName}</div>
-      <div class="breakdown-bar-row">
-        <div class="agree-pill">${agreeWord} ${agreePct.toFixed(0)}%</div>
-        <div class="disagree-pill">${disagreeWord} ${disagreePct.toFixed(0)}%</div>
-      </div>
-    `;
+
+    const label = document.createElement("div");
+    label.className = "breakdown-group-label";
+    label.textContent = groupName;
+    group.appendChild(label);
+
+    const chart = document.createElement("div");
+    chart.className = "breakdown-likert";
+    keys.forEach((key) => {
+      const pct = ((dist[key] || 0) * 100).toFixed(1);
+      const row = document.createElement("div");
+      row.className = "likert-row likert-row-sm";
+      row.innerHTML = `
+        <div class="likert-label">${labels[key]}</div>
+        <div class="likert-bar-track">
+          <div class="likert-bar-fill ${BAR_CLASSES[key] || "bar-neutral"}" style="width:${pct}%"></div>
+        </div>
+        <div class="likert-pct">${pct}%</div>
+      `;
+      chart.appendChild(row);
+    });
+    group.appendChild(chart);
     container.appendChild(group);
   });
 }
@@ -335,25 +356,6 @@ function renderLikertChart(container, dist, labels) {
       <div class="likert-pct">${pct}%</div>
     `;
     container.appendChild(row);
-  });
-}
-
-function renderTopList(container, segments, type) {
-  container.innerHTML = "";
-  if (!segments?.length) { container.textContent = "—"; return; }
-
-  segments.forEach((seg) => {
-    const pct = type === "positive"
-      ? (seg.agree_pct * 100).toFixed(0)
-      : (seg.disagree_pct * 100).toFixed(0);
-    const dimLabel = DIMENSION_LABELS["by_" + seg.dimension] || seg.dimension;
-    const item = document.createElement("div");
-    item.className = "top-item";
-    item.innerHTML = `
-      <span class="top-item-label">${dimLabel}: ${seg.group}</span>
-      <span class="top-item-pct">${pct}%</span>
-    `;
-    container.appendChild(item);
   });
 }
 

@@ -86,8 +86,6 @@ def aggregate_results(personas: List[Persona], responses: List[dict], tweet_type
         for key, attr in DIMENSION_MAP.items()
     }
 
-    top_agreeing, top_disagreeing = _top_segments(breakdowns)
-
     # Label keys depend on poll type so the front end knows what to display
     if tweet_type == "general":
         label_map = {
@@ -103,18 +101,10 @@ def aggregate_results(personas: List[Persona], responses: List[dict], tweet_type
 
         overall = relabel(overall)
         breakdowns = {k: {g: relabel(d) for g, d in v.items()} for k, v in breakdowns.items()}
-        top_agreeing = [
-            {**s, "dimension": s["dimension"]} for s in top_agreeing
-        ]
-        top_disagreeing = [
-            {**s, "dimension": s["dimension"]} for s in top_disagreeing
-        ]
 
     return {
         "tweet_type": tweet_type,
         "overall": overall,
         **breakdowns,
-        "top_agreeing": top_agreeing,
-        "top_disagreeing": top_disagreeing,
         "total_respondents": len(overall_responses),
     }
