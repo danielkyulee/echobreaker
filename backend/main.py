@@ -15,6 +15,7 @@ from persona_generator import generate_personas
 from simulation_runner import run_simulation
 from political_characterizer import characterize_political_groups
 from tweet_classifier import classify_tweet
+from research_store import save_research_session, log_survey_usage
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -62,6 +63,24 @@ async def classify_only(request: ClassifyRequest):
     if result.get("type") not in ("opinion", "general", "skip"):
         result["type"] = "general"
     return result
+
+
+class ResearchSessionRequest(BaseModel):
+    preSurvey: Optional[dict] = None
+    postSurvey: Optional[dict] = None
+    participantName: str = ""
+    record: Optional[dict] = None
+
+
+@app.post("/api/research/session")
+async def save_research(request: ResearchSessionRequest):
+    """Save a research study session (pre-survey + debrief + results)."""
+    try:
+        doc_id = save_research_session(request.model_dump())
+        return {"session_id": doc_id}
+    except Exception as e:
+        logger.exception("Failed to save research session: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/health")

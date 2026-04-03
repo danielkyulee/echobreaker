@@ -5,12 +5,20 @@
 const $ = (id) => document.getElementById(id);
 
 const views = {
-  idle:    $("view-idle"),
-  confirm: $("view-confirm"),
-  loading: $("view-loading"),
-  results: $("view-results"),
-  error:   $("view-error"),
+  idle:       $("view-idle"),
+  settings:   $("view-settings"),
+  confirm:    $("view-confirm"),
+  preSurvey:  $("view-pre-survey"),
+  loading:    $("view-loading"),
+  results:    $("view-results"),
+  debrief:    $("view-debrief"),
+  error:      $("view-error"),
 };
+
+// Research mode state
+let researchMode = false;
+let participantName = "";
+let currentPreSurveyData = null; // holds pre-survey answers + tweetData for debrief
 
 const DIMENSION_LABELS = {
   by_age:        "Age",
@@ -96,6 +104,12 @@ function handleState(state) {
       loadHistory();
       break;
 
+    case "ready_for_pre_survey":
+      if (researchMode) {
+        showPreSurvey(state.tweetData, state.tweetType || "opinion");
+      }
+      break;
+
     case "started":
       startLoadingView(state.tweetData, state.warnings || []);
       break;
@@ -105,7 +119,10 @@ function handleState(state) {
       break;
 
     case "complete":
-      if (state.record) renderResults(state.record);
+      if (state.record) {
+        renderResults(state.record);
+        $("btn-debrief").classList.toggle("hidden", !researchMode);
+      }
       break;
 
     case "skip":
@@ -380,6 +397,129 @@ function showError(message) {
   $("error-message").textContent = message;
 }
 
+// ---------------------------------------------------------------------------
+// Settings
+// ---------------------------------------------------------------------------
+$("btn-settings").addEventListener("click", () => showView("settings"));
+$("btn-settings-back").addEventListener("click", () => { showView("idle"); loadHistory(); });
+
+$("toggle-research").addEventListener("change", async (e) => {
+  researchMode = e.target.checked;
+  await chrome.storage.local.set({ researchMode });
+  $("research-name-row").classList.toggle("hidden", !researchMode);
+});
+
+$("input-participant-name").addEventListener("input", async (e) => {
+  participantName = e.target.value.trim();
+  await chrome.storage.local.set({ participantName });
+});
+
+// ---------------------------------------------------------------------------
+// Pre-survey (research mode)
+// ---------------------------------------------------------------------------
+function showPreSurvey(tweetData, tweetType) {
+  showView("preSurvey");
+  renderTweetPreviewText($("pre-survey-tweet-preview"), tweetData);
+
+  const labels = SCALE_LABELS[tweetType] || SCALE_LABELS.opinion;
+  const container = $("pre-survey-sliders");
+  container.innerHTML = "";
+
+  Object.entries(labels).forEach(([key, label]) => {
+    const row = document.createElement("div");
+    row.className = "estimate-row";
+    row.innerHTML = `
+      <label>${label}</label>
+      <input type="range" min="0" max="100" value="0" data-key="${key}" class="est-slider" />
+      <input type="number" min="0" max="100" value="0" data-key="${key}" class="est-number" />
+    `;
+    container.appendChild(row);
+  });
+
+  // Sync sliders and number inputs
+  container.querySelectorAll(".est-slider").forEach((slider) => {
+    slider.addEventListener("input", () => {
+      container.querySelector(`.est-number[data-key="${slider.dataset.key}"]`).value = slider.value;
+      updateEstimateTotal();
+    });
+  });
+  container.querySelectorAll(".est-number").forEach((num) => {
+    num.addEventListener("input", () => {
+      container.querySelector(`.est-slider[data-key="${num.dataset.key}"]`).value = num.value;
+      updateEstimateTotal();
+    });
+  });
+
+  currentPreSurveyData = { tweetData, tweetType };
+  updateEstimateTotal();
+}
+
+function updateEstimateTotal() {
+  const nums = [...document.querySelectorAll("#pre-survey-sliders .est-number")];
+  const total = nums.reduce((s, el) => s + (parseInt(el.value) || 0), 0);
+  const el = $("pre-survey-total");
+  el.textContent = `Total: ${total}%`;
+  el.className = "estimate-total " + (total === 100 ? "valid" : "invalid");
+  $("btn-pre-survey-submit").disabled = total !== 100;
+}
+
+$("btn-pre-survey-submit").addEventListener("click", () => {
+  const estimates = {};
+  document.querySelectorAll("#pre-survey-sliders .est-number").forEach((el) => {
+    estimates[el.dataset.key] = parseInt(el.value) || 0;
+  });
+  const cues = $("pre-survey-cues").value.trim();
+
+  currentPreSurveyData.preSurvey = { estimates, cues };
+
+  // Tell background to proceed with the survey
+  chrome.runtime.sendMessage({
+    type: "PROCEED_AFTER_PRE_SURVEY",
+    data: { estimates, cues, participantName },
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Debrief (research mode)
+// ---------------------------------------------------------------------------
+$("debrief-surprise").addEventListener("input", (e) => {
+  $("debrief-surprise-val").textContent = e.target.value;
+});
+
+$("btn-debrief").addEventListener("click", () => {
+  showView("debrief");
+  $("debrief-surprise").value = 5;
+  $("debrief-surprise-val").textContent = "5";
+  $("debrief-trust").value = "";
+  $("debrief-changed").value = "";
+  $("debrief-other").value = "";
+});
+
+$("btn-debrief-submit").addEventListener("click", () => {
+  const postSurvey = {
+    surprise: parseInt($("debrief-surprise").value),
+    trust: $("debrief-trust").value.trim(),
+    changed_belief: $("debrief-changed").value.trim(),
+    open_response: $("debrief-other").value.trim(),
+  };
+
+  chrome.runtime.sendMessage({
+    type: "SUBMIT_DEBRIEF",
+    data: {
+      postSurvey,
+      preSurvey: currentPreSurveyData?.preSurvey || null,
+      participantName,
+    },
+  });
+
+  showView("results");
+});
+
+$("btn-debrief-skip").addEventListener("click", () => showView("results"));
+
+// ---------------------------------------------------------------------------
+// Confirm / dismiss / back buttons
+// ---------------------------------------------------------------------------
 $("btn-confirm-yes").addEventListener("click", () => {
   chrome.runtime.sendMessage({ type: "CONFIRM_SURVEY" });
 });
@@ -421,6 +561,14 @@ async function loadHistory() {
 // Init — read current state from storage and load history
 // ---------------------------------------------------------------------------
 async function init() {
+  // Load research mode settings
+  const stored = await chrome.storage.local.get(["researchMode", "participantName"]);
+  researchMode = stored.researchMode || false;
+  participantName = stored.participantName || "";
+  $("toggle-research").checked = researchMode;
+  $("research-name-row").classList.toggle("hidden", !researchMode);
+  $("input-participant-name").value = participantName;
+
   await loadHistory();
 
   // Restore current state if a survey is in progress or just completed

@@ -2,7 +2,7 @@
 // Manages the survey queue and API communication.
 // Uses chrome.storage.session to push state to the side panel reliably.
 
-const API_BASE = "http://localhost:8080";
+const API_BASE = "https://echobreaker-git-263264146690.us-central1.run.app";
 
 // ---------------------------------------------------------------------------
 // Queue state
@@ -11,6 +11,8 @@ let surveyQueue = [];
 let isProcessing = false;
 let currentSurvey = null;
 let pendingConfirm = null; // held until user confirms or cancels
+let pendingPreSurvey = null; // held until pre-survey is submitted (research mode)
+let currentResearchData = null; // pre-survey data for current session
 
 // ---------------------------------------------------------------------------
 // State sync via chrome.storage.session
@@ -69,9 +71,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     case "CONFIRM_SURVEY":
       if (pendingConfirm) {
-        const { tweetData, warnings } = pendingConfirm;
+        const { tweetData, warnings, tweetType } = pendingConfirm;
         pendingConfirm = null;
-        enqueueSurvey(tweetData, warnings);
+        maybeShowPreSurvey(tweetData, warnings, tweetType);
       }
       sendResponse({ ok: true });
       break;
@@ -81,6 +83,35 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       setState({ status: "cancelled" });
       sendResponse({ ok: true });
       break;
+
+    case "PROCEED_AFTER_PRE_SURVEY":
+      if (pendingPreSurvey) {
+        const { tweetData, warnings } = pendingPreSurvey;
+        pendingPreSurvey = null;
+        // Store pre-survey data so we can send it with the debrief later
+        currentResearchData = { preSurvey: message.data, participantName: message.data.participantName };
+        enqueueSurvey(tweetData, warnings);
+      }
+      sendResponse({ ok: true });
+      break;
+
+    case "SUBMIT_DEBRIEF": {
+      const debriefPayload = {
+        ...currentResearchData,
+        postSurvey: message.data.postSurvey,
+        participantName: message.data.participantName,
+        record: currentSurvey?.record || null,
+      };
+      // Send to backend
+      fetch(`${API_BASE}/api/research/session`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(debriefPayload),
+      }).catch(() => {});
+      currentResearchData = null;
+      sendResponse({ ok: true });
+      break;
+    }
 
     case "GET_HISTORY":
       getHistory().then(sendResponse);
@@ -122,13 +153,24 @@ async function analyzeTweet(tweetData) {
   }
 
   const thread = classification?.thread || "standalone";
+  const tweetType = classification?.type || "general";
   const warnings = buildPreWarnings(tweetData, thread);
 
   if (warnings.length > 0) {
-    pendingConfirm = { tweetData, warnings };
+    pendingConfirm = { tweetData, warnings, tweetType };
     await setState({ status: "confirm", tweetData, warnings });
   } else {
-    enqueueSurvey(tweetData, []);
+    await maybeShowPreSurvey(tweetData, [], tweetType);
+  }
+}
+
+async function maybeShowPreSurvey(tweetData, warnings, tweetType) {
+  const { researchMode } = await chrome.storage.local.get("researchMode");
+  if (researchMode) {
+    pendingPreSurvey = { tweetData, warnings };
+    await setState({ status: "ready_for_pre_survey", tweetData, tweetType });
+  } else {
+    enqueueSurvey(tweetData, warnings);
   }
 }
 
@@ -253,6 +295,7 @@ async function streamResults(surveyId, tweetData, warnings) {
             results: data,
           };
           await saveToHistory(record);
+          if (currentSurvey) currentSurvey.record = record;
           await setState({ status: "complete", record });
 
         } else if (currentEventType === "error") {

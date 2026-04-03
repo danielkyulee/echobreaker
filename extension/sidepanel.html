@@ -14,8 +14,33 @@
       <div class="logo">
         <img src="icons/logo_text.png" alt="EchoBreaker" height="32" />
       </div>
-      <div id="queue-info" class="queue-info hidden"></div>
+      <div class="header-right">
+        <div id="queue-info" class="queue-info hidden"></div>
+        <button id="btn-settings" class="btn-icon" title="Settings">⚙</button>
+      </div>
     </header>
+
+    <!-- Settings view -->
+    <div id="view-settings" class="view">
+      <div class="settings-title">Settings</div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-label">Research Version</div>
+          <div class="settings-desc">Enable pre/post survey questions for research participants</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="toggle-research" />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div id="research-name-row" class="settings-row hidden">
+        <div>
+          <div class="settings-label">Participant Name</div>
+          <input type="text" id="input-participant-name" class="research-input" placeholder="Enter your full name" />
+        </div>
+      </div>
+      <button id="btn-settings-back" class="btn-back">← Back</button>
+    </div>
 
     <!-- Idle view -->
     <div id="view-idle" class="view active">
@@ -38,6 +63,22 @@
         <button id="btn-confirm-yes" class="btn-primary">Yes, analyze it</button>
         <button id="btn-confirm-no" class="btn-secondary">Cancel</button>
       </div>
+    </div>
+
+    <!-- Pre-survey (research mode) -->
+    <div id="view-pre-survey" class="view">
+      <div class="research-section-title">Before we run the survey...</div>
+      <div class="tweet-preview" id="pre-survey-tweet-preview"></div>
+      <div class="research-question">
+        <div class="research-q-label">What do you think the public opinion is? Estimate the percentage for each option (must total 100%).</div>
+        <div id="pre-survey-sliders" class="estimate-sliders"></div>
+        <div id="pre-survey-total" class="estimate-total">Total: 0%</div>
+      </div>
+      <div class="research-question">
+        <label class="research-q-label" for="pre-survey-cues">What cues influenced your guess?</label>
+        <textarea id="pre-survey-cues" class="research-textarea" rows="3" placeholder="e.g. The author's tone, the topic, my own beliefs..."></textarea>
+      </div>
+      <button id="btn-pre-survey-submit" class="btn-primary" disabled>Submit &amp; Run Survey</button>
     </div>
 
     <!-- Loading view -->
@@ -81,7 +122,35 @@
         EchoBreaker makes estimates using LLMs based on US census data. The results contained here are not real polling data. For exploratory use only.
       </div>
 
+      <button id="btn-debrief" class="btn-primary hidden">Debrief</button>
       <button id="btn-back" class="btn-back">← Back to history</button>
+    </div>
+
+    <!-- Debrief (research mode) -->
+    <div id="view-debrief" class="view">
+      <div class="research-section-title">Debrief</div>
+      <div class="research-question">
+        <label class="research-q-label">How surprised are you by the results? (1 = Not at all, 10 = Extremely)</label>
+        <div class="surprise-scale">
+          <input type="range" id="debrief-surprise" min="1" max="10" value="5" class="range-input" />
+          <div class="range-labels"><span>1</span><span>5</span><span>10</span></div>
+          <div id="debrief-surprise-val" class="range-value">5</div>
+        </div>
+      </div>
+      <div class="research-question">
+        <label class="research-q-label" for="debrief-trust">Do you trust EchoBreaker's results or your own instinct more? Explain.</label>
+        <textarea id="debrief-trust" class="research-textarea" rows="3" placeholder="Type your answer..."></textarea>
+      </div>
+      <div class="research-question">
+        <label class="research-q-label" for="debrief-changed">Did this change your belief on the topic? Explain.</label>
+        <textarea id="debrief-changed" class="research-textarea" rows="3" placeholder="Type your answer..."></textarea>
+      </div>
+      <div class="research-question">
+        <label class="research-q-label" for="debrief-other">Any other thoughts or feelings?</label>
+        <textarea id="debrief-other" class="research-textarea" rows="3" placeholder="Optional"></textarea>
+      </div>
+      <button id="btn-debrief-submit" class="btn-primary">Submit</button>
+      <button id="btn-debrief-skip" class="btn-back">Skip</button>
     </div>
 
     <!-- Error view -->
