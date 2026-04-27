@@ -193,14 +193,11 @@ The full evaluation methodology, results, and discussion are in **`milestonedocs
 
 ### Evaluation overview
 
-EchoBreaker was evaluated along two axes:
-
-1. **User study (primary).** Participants were asked, for a fixed set of opinion tweets, to first *guess* the U.S. public-opinion distribution before seeing EchoBreaker's output, then run the EchoBreaker survey, then complete a debrief asking how surprising the result was, whether they trusted the model or their gut more, and whether their belief shifted. The extension's **research mode** captures this entire workflow end-to-end (pre-survey, survey result, post-survey debrief) and writes it to Firestore.
-2. **Comparison against real polling baselines.** For tweets that map onto questions previously polled by Pew Research, Gallup, or other public pollsters, EchoBreaker's predicted Likert distribution is compared to the published distribution from the real poll. The published polls serve as the **alternative / baseline system** that EchoBreaker is compared against.
+**User study .** Participants were asked, for a fixed set of opinion tweets, to first *guess* the U.S. public-opinion distribution before seeing EchoBreaker's output, then run the EchoBreaker survey, then complete a debrief asking how surprising the result was, whether they trusted the model or their gut more, and whether their belief shifted. The extension's **research mode** captures this entire workflow end-to-end (pre-survey, survey result, post-survey debrief) and writes it to Firestore.
 
 ### How to replicate the evaluation
 
-#### A. Replicating the user study
+Replicating the user study
 
 1. **Deploy or run the backend** (see [Build and Run](#build-and-run)). Firestore must be configured for research data to persist; otherwise, sessions are simulated but not stored.
 2. **Install the extension** and open the side panel.
@@ -213,17 +210,7 @@ EchoBreaker was evaluated along two axes:
 6. Each completed session is written to the `research_sessions` collection in Firestore with the schema defined in `backend/research_store.py`: pre-survey estimates, full survey results, and post-survey responses, all keyed by participant.
 7. Export the data from Firestore (e.g. via `gcloud firestore export` or the Firebase console) to analyze in your tool of choice.
 
-#### B. Replicating the polling-baseline comparison
 
-1. Run a survey through EchoBreaker on the statement of interest. The completed result is stored in `chrome.storage.local` under `surveyHistory` and contains both the overall distribution and the eight demographic breakdowns (age, gender, region, urbanicity, education, income, race, politics).
-2. Pull the corresponding published poll distribution from the public source (e.g. a Pew Research topline). The exact polls used as comparisons are listed in the final report.
-3. Compute the mean absolute error (or KL divergence) between the EchoBreaker distribution and the published poll distribution. The final report uses MAE across the Likert categories.
-
-### Test cases / data sets
-
-- **Tweet evaluation set:** the curated list of opinion / general / skip tweets used in the study is documented in the final report (`milestonedocs/EchoBreaker_Final_Report.pdf`).
-- **Persona distribution data:** the Census + Pew distributions used to sample personas are in `backend/persona_generator.py` (the `DISTRIBUTIONS` dict). These are the single source of truth — replicators should keep them frozen if they want to compare against the original results, or modify them to experiment with alternative weightings.
-- **Raw research data:** participant pre-/post-survey responses and survey outputs were collected in Firestore (`research_sessions` collection); the schema is defined in `backend/research_store.py`. Anonymized exports referenced in the final report can be reproduced by running the user-study procedure above.
 
 ---
 
@@ -279,7 +266,7 @@ A user clicks the EchoBreaker button on a tweet → the content script (`content
 
 These are documented in detail in the final report:
 - The single-instance in-memory survey queue (`_surveys` dict in `main.py`) does not survive a Cloud Run instance restart; for multi-instance scaling this should move to Redis.
-- No real-time grounding from current polls — Phase 2 of the project plan calls for ingesting Pew/Gallup baselines and using them to anchor the simulation.
+- No real-time grounding from current polls 
 - No confidence intervals on the aggregated distribution — only point estimates.
 - No image or video understanding — multimodal context is currently flagged via warning rather than analyzed.
 - No support for non-U.S. demographics — distributions are U.S.-specific.
