@@ -1,8 +1,6 @@
 # EchoBreaker
 
-EchoBreaker is a Chrome extension that generates real-time synthetic public-opinion estimates for posts on Twitter/X (and Reddit). When a user clicks the EchoBreaker button on a post, the extension simulates 500 demographically-stratified personas using a large language model (Claude) and aggregates their responses into a Likert-scale "poll" with overall and demographic breakdowns. The goal is to help users see past their own echo chamber by showing how a representative cross-section of the U.S. public would likely respond to a given post.
-
-This project was built for CS 6156 (Spring 2026, Cornell Tech).
+EchoBreaker is a Chrome extension that generates real-time synthetic public-opinion estimates for posts on Twitter/X (and Reddit). When a user clicks the EchoBreaker button on a post, the extension simulates personas using a large language model (Claude) and aggregates their responses into a Likert-scale "poll" with overall and demographic breakdowns. The goal is to help users see past their own echo chamber by showing how a representative cross-section of the U.S. public would likely respond to a given post.
 
 ---
 
@@ -72,7 +70,7 @@ The original project proposal was for a different idea; the project pivoted with
 
 ## Build and Run
 
-EchoBreaker has two components — a Python backend and a Chrome extension — that must both be running for the system to work end-to-end. The fastest path is local backend + locally-loaded extension.
+EchoBreaker has two components — a Python backend and a Chrome extension — that must both be running for the system to work end-to-end. The fastest path is local backend + locally-loaded extension. However, the backend was deployed to a cloud service, but author makes no guarantee it will still be up. 
 
 ### Prerequisites
 
@@ -122,17 +120,6 @@ Configurable environment variables (see `backend/.env.example` and `backend/conf
 2. Click **Load unpacked** and select the `extension/` directory.
 3. Make sure the backend is running at `http://localhost:8080`. For local development you must also temporarily change `API_BASE` in `extension/background.js` from the Cloud Run URL to `http://localhost:8080`, then click the "reload" icon on the EchoBreaker entry in `chrome://extensions`.
 4. Visit `https://x.com` (or `https://www.reddit.com`) and hover over a post — an EchoBreaker button will appear next to the post's actions. Clicking it opens the Chrome side panel and starts the survey.
-
-### 3. Generating icons (rarely needed)
-
-```bash
-cd extension/
-python3 -m venv .venv && source .venv/bin/activate
-pip install Pillow
-python create_icons.py
-```
-
-This regenerates `extension/icons/icon16.png`, `icon48.png`, and `icon128.png`.
 
 ---
 
@@ -238,15 +225,6 @@ EchoBreaker was evaluated along two axes:
 - **Persona distribution data:** the Census + Pew distributions used to sample personas are in `backend/persona_generator.py` (the `DISTRIBUTIONS` dict). These are the single source of truth — replicators should keep them frozen if they want to compare against the original results, or modify them to experiment with alternative weightings.
 - **Raw research data:** participant pre-/post-survey responses and survey outputs were collected in Firestore (`research_sessions` collection); the schema is defined in `backend/research_store.py`. Anonymized exports referenced in the final report can be reproduced by running the user-study procedure above.
 
-### Alternative / comparison systems
-
-The evaluation compares EchoBreaker against:
-
-1. **Published U.S. public-opinion polls** (Pew Research, Gallup, etc.) — used as the ground-truth baseline for the subset of tweets whose underlying claim has been polled by professional pollsters. Source URLs and toplines are listed in the final report.
-2. **Naive participant guesses** (the "pre-survey" estimates collected before participants see EchoBreaker's output) — used as a human-baseline alternative to assess whether the tool actually adds information beyond people's gut intuition.
-
-Both alternatives are fully described, with citations, in the final report.
-
 ---
 
 ## AI Tool Usage Disclosure
@@ -255,19 +233,15 @@ AI generation was used substantially throughout the project. This section docume
 
 ### Tools used
 
-- **Claude Code (Anthropic)** — Used as the primary coding assistant during development. Used for: drafting and refactoring backend modules (`persona_generator.py`, `simulation_runner.py`, `aggregator.py`, `tweet_classifier.py`, `political_characterizer.py`), writing the Chrome extension service worker and side-panel UI logic, debugging streaming SSE issues, and writing this README. Configuration: default settings; the `claude-opus-4-7` and `claude-sonnet-4-6` models were used interchangeably.
-- **Claude API (Anthropic, programmatic)** — The deployed product itself uses the Claude API as its inference engine. The default model is `claude-sonnet-4-6`, configurable via the `ANTHROPIC_MODEL` environment variable. Three distinct prompt programs ship in the codebase:
-  - Tweet classifier (`backend/tweet_classifier.py`) — `temperature=0.1`, `max_tokens=200`.
-  - Political pre-characterizer (`backend/political_characterizer.py`) — `temperature=0.1`, `max_tokens=100`, 8 parallel calls per survey.
-  - Persona simulation (`backend/simulation_runner.py`) — `temperature=0.7`, `max_tokens=1000`, batched 25 personas at a time with up to 5 concurrent batches.
-- **ChatGPT / GPT-4** — Used occasionally for brainstorming alternate UI copy, formatting CSV data, and quick syntax lookups. No production code was committed directly from a ChatGPT session without being reviewed and modified.
+- **Claude Code (Anthropic)** — Used as the primary coding assistant during development. 
+- **ChatGPT / GPT-4** — Used occasionally for brainstorming alternate UI copy, and quick syntax lookups. 
 
 ### How AI was used vs. not used
 
-- **Code:** Most application code was AI-assisted (Claude Code), then manually reviewed, tested, and edited. All architectural decisions (queue model, SSE streaming, two-pass political characterization, persona dimensionality) were made by the human author and implemented with AI assistance.
-- **Demographic distributions:** The Census/Pew distributions in `backend/persona_generator.py` were transcribed by a human from public Census Bureau and Pew Research publications. AI was *not* used to "guess" demographic weights.
+- **Code:** Most application code was AI-assisted (Claude Code), then manually reviewed, tested, and edited. I also worked with AI to make  architectural decisions.
 - **Evaluation data:** Participant pre-/post-survey responses are real human responses, not synthetic. The survey results that EchoBreaker produces *are* synthetic (that is the point of the system) — those are LLM-generated by design, and that fact is disclosed in the side-panel results UI.
-- **Writing:** Milestone documents (proposal, progress report, final report) were drafted by the human author with AI assistance for editing and formatting.
+- **Writing:** Milestone documents (proposal, progress report, final report) were drafted by the human author with AI assistance for editing and formatting only. There was maybe 1 or 2 figure captions in the final report that I had AI write for me. Every other piece of content written on the final report was done solely by me, a human.
+- **This README:** This README was mostly written by AI. I, the human, reviewed it afterwards.
 
 ---
 
