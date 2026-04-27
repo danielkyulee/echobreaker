@@ -62,7 +62,7 @@ All required milestone deliverables are included in [`milestonedocs/`](milestone
 | Revised Project Proposal (pivot to EchoBreaker) | `milestonedocs/Revised Project Proposal (EchoBreaker).pdf` |
 | Progress Report | `milestonedocs/6156 Progress Report EchoBreaker.pdf` |
 | Final Report | `milestonedocs/EchoBreaker_Final_Report.pdf` |
-| Final Presentation (includes demo link) | `milestonedocs/EchoBreaker Presentation (includes link to demo).pdf` |
+| Final Presentation (includes demo link) | `milestonedocs/EchoBreaker Presentation (includes link to demo).pdf` but will also add here: https://www.loom.com/share/d5e5b020c8cb4cda8385083a3f869482  |
 
 The original project proposal was for a different idea; the project pivoted with the instructor's permission. The revised proposal documents the scope of the EchoBreaker project that was actually built.
 
