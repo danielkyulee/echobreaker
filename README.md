@@ -189,15 +189,15 @@ EchoBreaker is built on the following third-party software (anything beyond the 
 
 ## Evaluation
 
-The full evaluation methodology, results, and discussion are in **`milestonedocs/EchoBreaker_Final_Report.pdf`**. This section summarizes how to replicate it.
+The primary evaluation of EchoBreaker is a **user study** that measures how participants perceive, respond to, and update their beliefs based on the tool. A secondary evaluation compares EchoBreaker's synthetic survey output against real human polling data. Full methodology, results, and discussion are in **`milestonedocs/EchoBreaker_Final_Report.pdf`**. This section summarizes how to replicate each.
 
-### Evaluation overview
+### 1. User study (primary)
 
-**User study .** Participants were asked, for a fixed set of opinion tweets, to first *guess* the U.S. public-opinion distribution before seeing EchoBreaker's output, then run the EchoBreaker survey, then complete a debrief asking how surprising the result was, whether they trusted the model or their gut more, and whether their belief shifted. The extension's **research mode** captures this entire workflow end-to-end (pre-survey, survey result, post-survey debrief) and writes it to Firestore.
+The central question of this project is whether EchoBreaker actually changes how users see public opinion — not whether the underlying LLM-generated poll is numerically perfect. To measure this, participants were asked, for a fixed set of opinion tweets, to first *guess* the U.S. public-opinion distribution before seeing EchoBreaker's output, then run the EchoBreaker survey, then complete a debrief asking how surprising the result was, whether they trusted the model or their gut more, and whether their belief shifted. The extension's **research mode** captures this entire workflow end-to-end (pre-survey → survey result → post-survey debrief) and writes it to Firestore.
 
-### How to replicate the evaluation
+This evaluation is the centerpiece of the project. The participants' pre-survey guesses serve as a human baseline (the "alternative system" — your gut intuition vs. EchoBreaker), and the debrief responses measure the tool's actual effect on how people think about a tweet.
 
-Replicating the user study
+**How to replicate the user study:**
 
 1. **Deploy or run the backend** (see [Build and Run](#build-and-run)). Firestore must be configured for research data to persist; otherwise, sessions are simulated but not stored.
 2. **Install the extension** and open the side panel.
@@ -209,6 +209,23 @@ Replicating the user study
    - Fill in a 4-question **debrief** (1–10 surprise scale, trust comparison, belief change, free-text comments).
 6. Each completed session is written to the `research_sessions` collection in Firestore with the schema defined in `backend/research_store.py`: pre-survey estimates, full survey results, and post-survey responses, all keyed by participant.
 7. Export the data from Firestore (e.g. via `gcloud firestore export` or the Firebase console) to analyze in your tool of choice.
+
+### 2. Synthetic survey accuracy (secondary)
+
+As a sanity check on whether EchoBreaker's synthetic survey is at least directionally reliable, we compared its output against real human polling data from the **NPR/PBS News/Marist Poll, October 2025** ([https://maristpoll.marist.edu/polls/the-1st-amendment-in-the-u-s-october-2025/](https://maristpoll.marist.edu/polls/the-1st-amendment-in-the-u-s-october-2025/); n=1,477; conducted Sept 22–26, 2025). Two statements from the Marist poll were posted as tweets and surveyed through EchoBreaker, each run with both 500 and 1,000 personas. Full results are in the final report.
+
+The two tweet statements were:
+
+1. "It is more important to control gun violence than it is to protect gun rights"
+2. "We should deploy the National Guard into local communities to help reduce crime."
+
+**How to replicate:**
+
+1. Deploy or run the backend (see [Build and Run](#build-and-run)).
+2. Install the extension and open Twitter/X.
+3. Find or post tweets containing the exact statements above, then click the EchoBreaker button on each.
+4. To run with 1,000 personas instead of the default 500, raise the cap in `backend/main.py` and update the `persona_count` field sent in `extension/background.js`.
+5. Compare the resulting Likert distribution to the Marist topline at the link above.
 
 
 
