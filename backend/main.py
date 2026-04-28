@@ -49,7 +49,7 @@ class SurveyRequest(BaseModel):
     replying_to: Optional[str] = None
     parent_tweet: Optional[ParentTweet] = None
     quote_tweet: Optional[ParentTweet] = None
-    persona_count: int = 500
+    persona_count: int = 5000
 
 
 class ClassifyRequest(BaseModel):
@@ -110,7 +110,7 @@ async def stream_survey(survey_id: str):
         try:
             while True:
                 try:
-                    event = await asyncio.wait_for(queue.get(), timeout=180.0)
+                    event = await asyncio.wait_for(queue.get(), timeout=300.0)
                 except asyncio.TimeoutError:
                     yield _sse("error", {"message": "Survey timed out"})
                     break
@@ -167,7 +167,7 @@ async def _process_survey(
             return
 
         # Step 1: Generate personas + pre-characterize political groups (in parallel)
-        persona_count = min(request.persona_count, 1000)
+        persona_count = min(request.persona_count, 5000)
         logger.info("[%s] Generating personas + characterizing political groups...", survey_id)
 
         tweet_data = {
