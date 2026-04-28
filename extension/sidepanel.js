@@ -190,7 +190,7 @@ function startLoadingView(tweetData, warnings) {
 
   $("loading-tweet-preview").textContent = preview;
   $("progress-bar").style.width = "0%";
-  $("progress-count").textContent = "0 / 1000";
+  $("progress-count").textContent = "0 / 500";
   $("progress-label").textContent = "Simulating respondents…";
 }
 

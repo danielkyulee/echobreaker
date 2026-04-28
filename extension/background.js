@@ -213,7 +213,7 @@ async function processNext() {
     status: "started",
     tweetData,
     warnings,
-    progress: { completed: 0, total: 1000 },
+    progress: { completed: 0, total: 500 },
     record: null,
     error: null,
   });
@@ -242,7 +242,7 @@ async function runSurvey(tweetData, warnings) {
       replying_to: tweetData.replying_to || null,
       parent_tweet: tweetData.parent_tweet || null,
       quote_tweet: tweetData.quote_tweet || null,
-      persona_count: 1000,
+      persona_count: 500,
     }),
   });
 
