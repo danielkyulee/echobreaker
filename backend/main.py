@@ -49,7 +49,7 @@ class SurveyRequest(BaseModel):
     replying_to: Optional[str] = None
     parent_tweet: Optional[ParentTweet] = None
     quote_tweet: Optional[ParentTweet] = None
-    persona_count: int = 5000
+    persona_count: int = 1000
 
 
 class ClassifyRequest(BaseModel):
@@ -167,7 +167,7 @@ async def _process_survey(
             return
 
         # Step 1: Generate personas + pre-characterize political groups (in parallel)
-        persona_count = min(request.persona_count, 5000)
+        persona_count = min(request.persona_count, 1000)
         logger.info("[%s] Generating personas + characterizing political groups...", survey_id)
 
         tweet_data = {
